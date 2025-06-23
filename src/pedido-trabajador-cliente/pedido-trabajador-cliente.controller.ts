@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ValidationPipe, UsePipes } from '@nestjs/common';
 import { PedidoTrabajadorClienteService } from './pedido-trabajador-cliente.service';
 import { CreatePedidoTrabajadorClienteDto } from './dto/create-pedido-trabajador-cliente.dto';
 import { UpdatePedidoTrabajadorClienteDto } from './dto/update-pedido-trabajador-cliente.dto';
+import { ValidateDniDto } from './dto/validate-dni.dto';
 
 @Controller('delivery')
 export class PedidoTrabajadorClienteController {
@@ -17,9 +18,9 @@ export class PedidoTrabajadorClienteController {
     return this.pedidoTrabajadorClienteService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.pedidoTrabajadorClienteService.findOne(+id);
+  @Get('validardni')
+  findOne(@Query() params: ValidateDniDto) {
+    return this.pedidoTrabajadorClienteService.findOne(params.dni);
   }
 
   @Patch(':id')

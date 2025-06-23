@@ -5,6 +5,7 @@ import { RolModule } from './rol/rol.module';
 import { PedidoTrabajadorClienteModule } from './pedido-trabajador-cliente/pedido-trabajador-cliente.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TrabajadorClienteModule } from './trabajador-cliente/trabajador-cliente.module';
+import { CommonModule } from './common/common.module';
 
 
 
@@ -25,6 +26,7 @@ import { TrabajadorClienteModule } from './trabajador-cliente/trabajador-cliente
     RolModule, 
     PedidoTrabajadorClienteModule,
     TrabajadorClienteModule,
+    CommonModule,
   ],
   controllers: [],
   providers: [],

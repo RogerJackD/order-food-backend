@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreatePedidoTrabajadorClienteDto } from './dto/create-pedido-trabajador-cliente.dto';
 import { UpdatePedidoTrabajadorClienteDto } from './dto/update-pedido-trabajador-cliente.dto';
+import { ValidateDniDto } from './dto/validate-dni.dto';
 
 @Injectable()
 export class PedidoTrabajadorClienteService {
@@ -12,8 +13,8 @@ export class PedidoTrabajadorClienteService {
     return `This action returns all pedidoTrabajadorCliente`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} pedidoTrabajadorCliente`;
+  findOne(dni: string) {
+    return `This action returns a #${dni} pedidoTrabajadorCliente`;
   }
 
   update(id: number, updatePedidoTrabajadorClienteDto: UpdatePedidoTrabajadorClienteDto) {
