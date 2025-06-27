@@ -15,7 +15,7 @@ export class PedidoTrabajadorClienteController {
 
   @Get()
   findAll() {
-    return this.pedidoTrabajadorClienteService.findAll();
+    return this.pedidoTrabajadorClienteService.obtenerTodos();
   }
 
   @Get('validardni')

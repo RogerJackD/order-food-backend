@@ -6,6 +6,11 @@ import { PedidoTrabajadorClienteModule } from './pedido-trabajador-cliente/pedid
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TrabajadorClienteModule } from './trabajador-cliente/trabajador-cliente.module';
 import { CommonModule } from './common/common.module';
+import { MercaderiaModule } from './mercaderia/mercaderia.module';
+import { FamiliaProductoModule } from './familia-producto/familia-producto.module';
+import { ProductoModule } from './producto/producto.module';
+import { LugarDestinoModule } from './lugar-destino/lugar-destino.module';
+import { SubFamiliaProductoModule } from './sub-familia-producto/sub-familia-producto.module';
 
 
 
@@ -27,6 +32,11 @@ import { CommonModule } from './common/common.module';
     PedidoTrabajadorClienteModule,
     TrabajadorClienteModule,
     CommonModule,
+    MercaderiaModule,
+    FamiliaProductoModule,
+    ProductoModule,
+    LugarDestinoModule,
+    SubFamiliaProductoModule,
   ],
   controllers: [],
   providers: [],

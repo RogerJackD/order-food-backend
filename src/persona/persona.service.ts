@@ -7,10 +7,10 @@ import { Persona } from './entities/persona.entity';
 export class PersonaService {
   constructor(
     @InjectRepository(Persona)
-    private readonly rolRepository: Repository<Persona>,
+    private readonly personaRepository: Repository<Persona>,
   ) {}
 
   async obtenerTodos(): Promise<Persona[]> {
-    return this.rolRepository.find();
+    return this.personaRepository.find();
   }
 }

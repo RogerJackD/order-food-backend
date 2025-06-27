@@ -4,13 +4,23 @@ import { UpdatePedidoTrabajadorClienteDto } from './dto/update-pedido-trabajador
 import { TrabajadorCliente } from 'src/trabajador-cliente/entities/trabajador-cliente.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PedidoTrabajadorCliente } from './entities/pedido-trabajador-cliente.entity';
 
 @Injectable()
 export class PedidoTrabajadorClienteService {
   constructor(
     @InjectRepository(TrabajadorCliente)
     private readonly trabajadorClienteRepository: Repository<TrabajadorCliente>,
+
+    //llamar entidad y repositorio pedido
+    @InjectRepository(PedidoTrabajadorCliente)
+    private readonly pedidoTrabajadorClienteRepository: Repository<PedidoTrabajadorCliente>,
+
   ) {}
+
+  async obtenerTodos(): Promise<PedidoTrabajadorCliente[]> {
+      return this.pedidoTrabajadorClienteRepository.find();
+  }
 
   
   async findOne (dni: string) {
@@ -36,6 +46,8 @@ export class PedidoTrabajadorClienteService {
       throw new BadRequestException("trabajador no econtrado")
     return {nombres : trabajador.p_RazonSocial};
   }
+
+  
   create(createPedidoTrabajadorClienteDto: CreatePedidoTrabajadorClienteDto) {
     return 'This action adds a new pedidoTrabajadorCliente';
   }
