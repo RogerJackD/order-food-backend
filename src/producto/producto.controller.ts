@@ -14,7 +14,7 @@ export class ProductoController {
 
   @Get()
   findAll() {
-    return this.productoService.obtenerTodos();
+    return this.productoService.getAllByFamily('ALIMENTOS');
   }
 
   @Get(':id')

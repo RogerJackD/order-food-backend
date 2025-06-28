@@ -3,14 +3,41 @@ import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Producto } from './entities/producto.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
 export class ProductoService {
   constructor(
     @InjectRepository(Producto)
     private readonly personaRepository: Repository<Producto>,
+    private dataSource: DataSource
+    
   ) {}
+
+
+  async getAllByFamily(nombreFamiliaProducto: string): Promise<any[]> {
+  const sql = `
+    SELECT 
+      P.NombreProducto,
+      P.IdProducto
+    FROM mercaderia M
+    LEFT JOIN producto P ON P.IdProducto = M.IdProducto
+    LEFT JOIN subfamiliaproducto SFP ON SFP.IdSubFamiliaProducto = M.IdSubFamiliaProducto
+    LEFT JOIN familiaproducto FP ON FP.IdFamiliaProducto = SFP.IdFamiliaProducto
+    WHERE FP.NombreFamiliaProducto = ?
+      AND P.EstadoProducto = '1'
+      AND FP.IndicadorEstado = 'A'
+    ORDER BY M.CodigoMercaderia
+  `;
+
+  const resultado = await this.dataSource.query(sql, [nombreFamiliaProducto]);
+  return resultado;
+}
+
+
+
+
+
 
   async obtenerTodos(): Promise<Producto[]> {
     return this.personaRepository.find();

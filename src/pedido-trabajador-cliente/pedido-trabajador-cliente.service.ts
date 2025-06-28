@@ -47,6 +47,9 @@ export class PedidoTrabajadorClienteService {
     return {nombres : trabajador.p_RazonSocial};
   }
 
+
+  
+
   
   create(createPedidoTrabajadorClienteDto: CreatePedidoTrabajadorClienteDto) {
     return 'This action adds a new pedidoTrabajadorCliente';
