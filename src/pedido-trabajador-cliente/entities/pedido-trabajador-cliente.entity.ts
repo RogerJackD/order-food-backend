@@ -35,28 +35,28 @@ export class PedidoTrabajadorCliente {
   // Productos
   @ManyToOne(() => Producto, { nullable: true, eager: true })
   @JoinColumn({ name: 'IdProductoDesayuno' })
-  productoDesayuno: Producto;
+  productoDesayuno: Producto | null;
 
   @ManyToOne(() => Producto, { nullable: true, eager: true })
   @JoinColumn({ name: 'IdProductoAlmuerzo' })
-  productoAlmuerzo: Producto;
+  productoAlmuerzo: Producto | null;
 
   @ManyToOne(() => Producto, { nullable: true, eager: true })
   @JoinColumn({ name: 'IdProductoCena' })
-  productoCena: Producto;
+  productoCena: Producto | null;
 
   // Lugares de entrega
   @ManyToOne(() => LugarDestino, { nullable: true, eager: true })
   @JoinColumn({ name: 'IdLugarEntregaDesayuno' })
-  lugarEntregaDesayuno: LugarDestino;
+  lugarEntregaDesayuno: LugarDestino | null;
 
   @ManyToOne(() => LugarDestino, { nullable: true, eager: true })
   @JoinColumn({ name: 'IdLugarEntregaAlmuerzo' })
-  lugarEntregaAlmuerzo: LugarDestino;
+  lugarEntregaAlmuerzo: LugarDestino | null;
 
   @ManyToOne(() => LugarDestino, { nullable: true, eager: true })
   @JoinColumn({ name: 'IdLugarEntregaCena' })
-  lugarEntregaCena: LugarDestino;
+  lugarEntregaCena: LugarDestino | null;
 
   @Column({ name: 'EstadoPedido', type: 'int' })
   estadoPedido: number;

@@ -3,6 +3,7 @@ import { PedidoTrabajadorClienteService } from './pedido-trabajador-cliente.serv
 import { CreatePedidoTrabajadorClienteDto } from './dto/create-pedido-trabajador-cliente.dto';
 import { UpdatePedidoTrabajadorClienteDto } from './dto/update-pedido-trabajador-cliente.dto';
 import { ValidateDniDto } from './dto/validate-dni.dto';
+import { UpdateEstadoPedidoDto } from './dto/update-estado-pedido.dto';
 
 @Controller('delivery')
 export class PedidoTrabajadorClienteController {
@@ -23,10 +24,24 @@ export class PedidoTrabajadorClienteController {
     return this.pedidoTrabajadorClienteService.findOne(params.dni);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePedidoTrabajadorClienteDto: UpdatePedidoTrabajadorClienteDto) {
-    return this.pedidoTrabajadorClienteService.update(+id, updatePedidoTrabajadorClienteDto);
+  @Patch('cliente-pedidos/:idTrabajador')
+  async update(
+    @Param('idTrabajador') idTrabajador: number,
+    @Body() updateDto: UpdatePedidoTrabajadorClienteDto,
+  ) {
+    console.log(idTrabajador)
+    return this.pedidoTrabajadorClienteService.actualizarPedidosPorRangoFechas(
+      idTrabajador,
+      updateDto,
+    );
   }
+
+  @Patch('actualizar-estado')
+async actualizarEstado(
+  @Body() updateDto: UpdateEstadoPedidoDto,
+) {
+  return this.pedidoTrabajadorClienteService.actualizarEstadoPedido(updateDto.pedidosIds);
+}
 
   @Delete(':id')
   remove(@Param('id') id: string) {
