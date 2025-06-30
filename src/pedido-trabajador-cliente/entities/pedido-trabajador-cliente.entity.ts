@@ -15,6 +15,11 @@ export class PedidoTrabajadorCliente {
   @PrimaryGeneratedColumn({ name: 'idPedido' })
   idPedido: number;
 
+  @Column({ name: 'IdTrabajador' })
+  idTrabajador: number;
+
+  @Column({ name: 'IdCliente' })
+  idCliente: number;
   // Relación compuesta con TrabajadorCliente
   @ManyToOne(() => TrabajadorCliente, { eager: true })
   @JoinColumn([
@@ -23,11 +28,6 @@ export class PedidoTrabajadorCliente {
   ])
   trabajadorCliente: TrabajadorCliente;
 
-  @Column({ name: 'IdTrabajador' })
-  idTrabajador: number;
-
-  @Column({ name: 'IdCliente' })
-  idCliente: number;
 
   @Column({ name: 'FechaPedido', type: 'date' })
   fechaPedido: string;

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Producto } from './entities/producto.entity';
@@ -30,7 +30,13 @@ export class ProductoService {
     ORDER BY M.CodigoMercaderia
   `;
 
+
+
   const resultado = await this.dataSource.query(sql, [nombreFamiliaProducto]);
+
+  if(!resultado)
+    throw new BadRequestException("sin resultados")
+
   return resultado;
 }
 

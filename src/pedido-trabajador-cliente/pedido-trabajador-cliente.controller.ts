@@ -10,7 +10,7 @@ export class PedidoTrabajadorClienteController {
 
   @Post()
   create(@Body() createPedidoTrabajadorClienteDto: CreatePedidoTrabajadorClienteDto) {
-    return this.pedidoTrabajadorClienteService.create(createPedidoTrabajadorClienteDto);
+    return this.pedidoTrabajadorClienteService.crearPedidosPorRangoFechas(createPedidoTrabajadorClienteDto);
   }
 
   @Get()
