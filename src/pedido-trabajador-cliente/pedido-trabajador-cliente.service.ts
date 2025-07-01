@@ -7,10 +7,11 @@ import { CreatePedidoTrabajadorClienteDto } from './dto/create-pedido-trabajador
 import { UpdatePedidoTrabajadorClienteDto } from './dto/update-pedido-trabajador-cliente.dto';
 import { TrabajadorCliente } from 'src/trabajador-cliente/entities/trabajador-cliente.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, Repository, UpdateResult } from 'typeorm';
+import { Between, EntityNotFoundError, In, Repository, UpdateResult } from 'typeorm';
 import { PedidoTrabajadorCliente } from './entities/pedido-trabajador-cliente.entity';
 import { Producto } from 'src/producto/entities/producto.entity';
 import { LugarDestino } from 'src/lugar-destino/entities/lugar-destino.entity';
+import { UpdateEstadoPedidoDto } from './dto/update-estado-pedido.dto';
 
 @Injectable()
 export class PedidoTrabajadorClienteService {
@@ -313,29 +314,58 @@ export class PedidoTrabajadorClienteService {
 
 
 
-async actualizarEstadoPedido(pedidosIds: number[]): Promise<UpdateResult> {
-  // Validar que existan los pedidos
-  const pedidosExistentes = await this.pedidoTrabajadorClienteRepository.count({
-    where: { idPedido: In(pedidosIds) }
-  });
-
-  if (pedidosExistentes !== pedidosIds.length) {
-    throw new BadRequestException('Algunos pedidos no existen');
+async actualizarEstadoPedido(
+  idPedido: number, 
+  updateDto: UpdateEstadoPedidoDto
+): Promise<PedidoTrabajadorCliente> {
+  // 1. Verificar que el pedido existe
+  const pedido = await this.pedidoTrabajadorClienteRepository.findOneBy({ idPedido });
+  
+  if (!pedido) {
+    throw new NotFoundException(`Pedido con ID ${idPedido} no encontrado`);
   }
 
-  // Actualizar en lote
-  return this.pedidoTrabajadorClienteRepository.update(
-    { idPedido: In(pedidosIds) },
-    { 
-      estadoPedido: 2,
-      fechaModificacion: () => 'CURRENT_TIMESTAMP', // Usar función de BD
-    }
-  );
+  // 2. Actualizar el estado
+  pedido.estadoPedido = updateDto.estadoPedido;
+  
+  // Formatear fecha manualmente para MySQL (formato: YYYY-MM-DD HH:MM:SS)
+  const now = new Date();
+  const mysqlFormattedDate = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+  
+  pedido.fechaModificacion = mysqlFormattedDate;
+
+  // 3. Guardar y retornar
+  return this.pedidoTrabajadorClienteRepository.save(pedido);
 }
 
-
-
   ///////////////////
+
+
+  // pedido-trabajador-cliente.service.ts
+
+async obtenerPedidosActivosPorTrabajador(
+  idTrabajador: number
+): Promise<PedidoTrabajadorCliente[]> {
+  return this.pedidoTrabajadorClienteRepository.find({
+    where: {
+      idTrabajador: idTrabajador,
+      estadoPedido: 1,
+      indicadorEstado: 'A'
+    },
+    relations: [
+      'productoDesayuno',
+      'productoAlmuerzo',
+      'productoCena',
+      'lugarEntregaDesayuno',
+      'lugarEntregaAlmuerzo',
+      'lugarEntregaCena'
+    ],
+    order: {
+      fechaPedido: 'ASC' // Ordenar por fecha ascendente
+    }
+  });
+}
+
 
   findAll() {
     return `This action returns all pedidoTrabajadorCliente`;

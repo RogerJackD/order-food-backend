@@ -1,8 +1,9 @@
 // src/pedido-trabajador-cliente/dto/update-estado-pedido.dto.ts
-import { IsInt, IsArray } from 'class-validator';
+import { IsInt, Min, Max } from 'class-validator';
 
 export class UpdateEstadoPedidoDto {
-  @IsArray()
-  @IsInt({ each: true })
-  pedidosIds: number[]; // Array de IDs de pedidos a actualizar
+  @IsInt()
+  @Min(1) // Estado mínimo permitido
+  @Max(5) // Estado máximo permitido (ajusta según tus necesidades)
+  estadoPedido: number;
 }

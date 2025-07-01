@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ValidationPipe, UsePipes } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ValidationPipe,
+  UsePipes,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { PedidoTrabajadorClienteService } from './pedido-trabajador-cliente.service';
 import { CreatePedidoTrabajadorClienteDto } from './dto/create-pedido-trabajador-cliente.dto';
 import { UpdatePedidoTrabajadorClienteDto } from './dto/update-pedido-trabajador-cliente.dto';
@@ -7,16 +19,26 @@ import { UpdateEstadoPedidoDto } from './dto/update-estado-pedido.dto';
 
 @Controller('delivery')
 export class PedidoTrabajadorClienteController {
-  constructor(private readonly pedidoTrabajadorClienteService: PedidoTrabajadorClienteService) {}
+  constructor(
+    private readonly pedidoTrabajadorClienteService: PedidoTrabajadorClienteService,
+  ) {}
 
   @Post()
-  create(@Body() createPedidoTrabajadorClienteDto: CreatePedidoTrabajadorClienteDto) {
-    return this.pedidoTrabajadorClienteService.crearPedidosPorRangoFechas(createPedidoTrabajadorClienteDto);
+  create(
+    @Body() createPedidoTrabajadorClienteDto: CreatePedidoTrabajadorClienteDto,
+  ) {
+    return this.pedidoTrabajadorClienteService.crearPedidosPorRangoFechas(
+      createPedidoTrabajadorClienteDto,
+    );
   }
 
-  @Get()
-  findAll() {
-    return this.pedidoTrabajadorClienteService.obtenerTodos();
+  @Get('cliente-pedidos/:idTrabajador')
+  async getPedidosActivosPorTrabajador(
+    @Param('idTrabajador', ParseIntPipe) idTrabajador: number,
+  ) {
+    return this.pedidoTrabajadorClienteService.obtenerPedidosActivosPorTrabajador(
+      idTrabajador,
+    );
   }
 
   @Get('validardni')
@@ -29,19 +51,24 @@ export class PedidoTrabajadorClienteController {
     @Param('idTrabajador') idTrabajador: number,
     @Body() updateDto: UpdatePedidoTrabajadorClienteDto,
   ) {
-    console.log(idTrabajador)
+    console.log(idTrabajador);
     return this.pedidoTrabajadorClienteService.actualizarPedidosPorRangoFechas(
       idTrabajador,
       updateDto,
     );
   }
 
-  @Patch('actualizar-estado')
-async actualizarEstado(
-  @Body() updateDto: UpdateEstadoPedidoDto,
-) {
-  return this.pedidoTrabajadorClienteService.actualizarEstadoPedido(updateDto.pedidosIds);
-}
+  // src/pedido-trabajador-cliente/pedido-trabajador-cliente.controller.ts
+  @Patch('actualizar-estado/:idPedido')
+  async actualizarEstado(
+    @Param('idPedido', ParseIntPipe) idPedido: number,
+    @Body() updateDto: UpdateEstadoPedidoDto,
+  ) {
+    return this.pedidoTrabajadorClienteService.actualizarEstadoPedido(
+      idPedido,
+      updateDto,
+    );
+  }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
