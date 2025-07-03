@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -81,7 +82,7 @@ export class PedidoTrabajadorClienteService {
         };
       });
 
-      throw new BadRequestException({
+      throw new ConflictException({
         message:
           'Ya existen pedidos para algunas fechas en el rango solicitado',
         trabajadorId: createDto.IdTrabajador,

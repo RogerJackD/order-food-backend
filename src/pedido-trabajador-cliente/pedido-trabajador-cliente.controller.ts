@@ -10,6 +10,7 @@ import {
   ValidationPipe,
   UsePipes,
   ParseIntPipe,
+  Put,
 } from '@nestjs/common';
 import { PedidoTrabajadorClienteService } from './pedido-trabajador-cliente.service';
 import { CreatePedidoTrabajadorClienteDto } from './dto/create-pedido-trabajador-cliente.dto';
@@ -46,7 +47,7 @@ export class PedidoTrabajadorClienteController {
     return this.pedidoTrabajadorClienteService.findOne(params.dni);
   }
 
-  @Patch('cliente-pedidos/:idTrabajador')
+  @Put('cliente-pedidos/:idTrabajador')
   async update(
     @Param('idTrabajador') idTrabajador: number,
     @Body() updateDto: UpdatePedidoTrabajadorClienteDto,
