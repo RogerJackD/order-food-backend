@@ -34,111 +34,126 @@ export class PedidoTrabajadorClienteService {
   //crear pedidos
 
   async crearPedidosPorRangoFechas(
-    createDto: CreatePedidoTrabajadorClienteDto,
-  ): Promise<PedidoTrabajadorCliente[]> {
-    const fechaInicio = new Date(createDto.FechaIngreso);
-    const fechaFin = new Date(createDto.FechaSalida);
+  createDto: CreatePedidoTrabajadorClienteDto,
+): Promise<PedidoTrabajadorCliente[]> {
 
-    // Buscar pedidos existentes incluyendo las relaciones con productos
-    const pedidosExistentes = await this.pedidoTrabajadorClienteRepository.find(
-      {
-        where: {
-          idTrabajador: createDto.IdTrabajador,
-          idCliente: createDto.IdCliente,
-          fechaPedido: Between(
-            fechaInicio.toISOString().split('T')[0],
-            fechaFin.toISOString().split('T')[0],
-          ),
-        },
-        relations: ['productoDesayuno', 'productoAlmuerzo', 'productoCena'],
+  const fechaInicio = new Date(createDto.FechaIngreso);
+  const fechaFin = new Date(createDto.FechaSalida);
+
+  // Verificar conflictos existentes
+  const pedidosExistentes = await this.pedidoTrabajadorClienteRepository.find({
+    where: {
+      idTrabajador: createDto.IdTrabajador,
+      idCliente: createDto.IdCliente,
+      fechaPedido: Between(
+        fechaInicio.toISOString().split('T')[0],
+        fechaFin.toISOString().split('T')[0],
+      ),
+    },
+    relations: ['productoDesayuno', 'productoAlmuerzo', 'productoCena'],
+  });
+
+  if (pedidosExistentes.length > 0) {
+    const conflictos = pedidosExistentes.map((pedido) => ({
+      fecha: pedido.fechaPedido,
+      productos: {
+        desayuno: pedido.productoDesayuno
+          ? { id: pedido.productoDesayuno.idProducto, nombre: pedido.productoDesayuno.nombreProducto }
+          : null,
+        almuerzo: pedido.productoAlmuerzo
+          ? { id: pedido.productoAlmuerzo.idProducto, nombre: pedido.productoAlmuerzo.nombreProducto }
+          : null,
+        cena: pedido.productoCena
+          ? { id: pedido.productoCena.idProducto, nombre: pedido.productoCena.nombreProducto }
+          : null,
       },
-    );
+    }));
 
-    if (pedidosExistentes.length > 0) {
-      // Procesar los pedidos existentes para obtener información detallada
-      const conflictos = pedidosExistentes.map((pedido) => {
-        return {
-          fecha: pedido.fechaPedido,
-          productos: {
-            desayuno: pedido.productoDesayuno
-              ? {
-                  id: pedido.productoDesayuno.idProducto,
-                  nombre: pedido.productoDesayuno.nombreProducto,
-                }
-              : null,
-            almuerzo: pedido.productoAlmuerzo
-              ? {
-                  id: pedido.productoAlmuerzo.idProducto,
-                  nombre: pedido.productoAlmuerzo.nombreProducto,
-                }
-              : null,
-            cena: pedido.productoCena
-              ? {
-                  id: pedido.productoCena.idProducto,
-                  nombre: pedido.productoCena.nombreProducto,
-                }
-              : null,
-          },
-        };
-      });
-
-      throw new ConflictException({
-        message:
-          'Ya existen pedidos para algunas fechas en el rango solicitado',
-        trabajadorId: createDto.IdTrabajador,
-        clienteId: createDto.IdCliente,
-        conflictos,
-        rangoSolicitado: {
-          desde: createDto.FechaIngreso,
-          hasta: createDto.FechaSalida,
-        },
-      });
-    }
-
-    // Resto del código para crear nuevos pedidos...
-    const diffTime = Math.abs(fechaFin.getTime() - fechaInicio.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-    const pedidosACrear: PedidoTrabajadorCliente[] = [];
-
-    for (let i = 0; i < diffDays; i++) {
-      const fechaActual = new Date(fechaInicio);
-      fechaActual.setDate(fechaInicio.getDate() + i);
-
-      const pedido = new PedidoTrabajadorCliente();
-      pedido.idTrabajador = createDto.IdTrabajador;
-      pedido.idCliente = createDto.IdCliente;
-      pedido.trabajadorCliente = {
-        idTrabajador: createDto.IdTrabajador,
-        idCliente: createDto.IdCliente,
-      } as TrabajadorCliente;
-      pedido.fechaPedido = fechaActual.toISOString().split('T')[0];
-
-      if (createDto.IdProductoDesayuno) {
-        pedido.productoDesayuno = {
-          idProducto: createDto.IdProductoDesayuno,
-        } as Producto;
-      }
-      if (createDto.IdProductoAlmuerzo) {
-        pedido.productoAlmuerzo = {
-          idProducto: createDto.IdProductoAlmuerzo,
-        } as Producto;
-      }
-      if (createDto.IdProductoCena) {
-        pedido.productoCena = {
-          idProducto: createDto.IdProductoCena,
-        } as Producto;
-      }
-
-      pedido.estadoPedido = 1;
-      pedido.indicadorEstado = 'A';
-      pedido.usuarioRegistro = 'usuario-actual';
-
-      pedidosACrear.push(pedido);
-    }
-
-    return this.pedidoTrabajadorClienteRepository.save(pedidosACrear);
+    throw new ConflictException({
+      message: 'Ya existen pedidos para algunas fechas en el rango solicitado',
+      trabajadorId: createDto.IdTrabajador,
+      clienteId: createDto.IdCliente,
+      conflictos,
+      rangoSolicitado: {
+        desde: createDto.FechaIngreso,
+        hasta: createDto.FechaSalida,
+      },
+    });
   }
+
+  // Buscar productos y lugares si fueron enviados
+  const productoDesayuno = createDto.IdProductoDesayuno
+    ? await this.productoRepository.findOne({
+        where: { idProducto: createDto.IdProductoDesayuno },
+      })
+    : null;
+
+  const productoAlmuerzo = createDto.IdProductoAlmuerzo
+    ? await this.productoRepository.findOne({
+        where: { idProducto: createDto.IdProductoAlmuerzo },
+      })
+    : null;
+
+  const productoCena = createDto.IdProductoCena
+    ? await this.productoRepository.findOne({
+        where: { idProducto: createDto.IdProductoCena },
+      })
+    : null;
+
+  const lugarDesayuno = createDto.IdLugarEntregaDesayuno
+    ? await this.lugarDestinoRepository.findOne({
+        where: { idLugarDestino: createDto.IdLugarEntregaDesayuno },
+      })
+    : null;
+
+  const lugarAlmuerzo = createDto.IdLugarEntregaAlmuerzo
+    ? await this.lugarDestinoRepository.findOne({
+        where: { idLugarDestino: createDto.IdLugarEntregaAlmuerzo },
+      })
+    : null;
+
+  const lugarCena = createDto.IdLugarEntregaCena
+    ? await this.lugarDestinoRepository.findOne({
+        where: { idLugarDestino: createDto.IdLugarEntregaCena },
+      })
+    : null;
+
+  // Calcular cantidad de días en el rango
+  const diffTime = Math.abs(fechaFin.getTime() - fechaInicio.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+  const pedidosACrear: PedidoTrabajadorCliente[] = [];
+
+  for (let i = 0; i < diffDays; i++) {
+    const fechaActual = new Date(fechaInicio);
+    fechaActual.setDate(fechaInicio.getDate() + i);
+
+    const pedido = new PedidoTrabajadorCliente();
+    pedido.idTrabajador = createDto.IdTrabajador;
+    pedido.idCliente = createDto.IdCliente;
+    pedido.trabajadorCliente = {
+      idTrabajador: createDto.IdTrabajador,
+      idCliente: createDto.IdCliente,
+    } as TrabajadorCliente;
+    pedido.fechaPedido = fechaActual.toISOString().split('T')[0];
+
+    if (productoDesayuno) pedido.productoDesayuno = productoDesayuno;
+    if (productoAlmuerzo) pedido.productoAlmuerzo = productoAlmuerzo;
+    if (productoCena) pedido.productoCena = productoCena;
+
+    if (lugarDesayuno) pedido.lugarEntregaDesayuno = lugarDesayuno;
+    if (lugarAlmuerzo) pedido.lugarEntregaAlmuerzo = lugarAlmuerzo;
+    if (lugarCena) pedido.lugarEntregaCena = lugarCena;
+
+    pedido.estadoPedido = 1;
+    pedido.indicadorEstado = 'A';
+    pedido.usuarioRegistro = 'usuario-actual';
+
+    pedidosACrear.push(pedido);
+  }
+
+  return this.pedidoTrabajadorClienteRepository.save(pedidosACrear);
+}
 
   async obtenerTodos(): Promise<PedidoTrabajadorCliente[]> {
     return this.pedidoTrabajadorClienteRepository.find();
