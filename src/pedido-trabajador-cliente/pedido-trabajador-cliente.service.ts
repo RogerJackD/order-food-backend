@@ -195,138 +195,169 @@ export class PedidoTrabajadorClienteService {
   //   return nuevoPedido;
   // }
 
-  async actualizarPedidosPorRangoFechas(
-    idTrabajador: number,
-    updateDto: UpdatePedidoTrabajadorClienteDto,
-  ): Promise<{
-    actualizados: PedidoTrabajadorCliente[];
-    creados: PedidoTrabajadorCliente[];
-  }> {
-    // 1. Obtener el idCliente asociado al trabajador
-    const relacion = await this.trabajadorClienteRepository.findOne({
-      where: { idTrabajador },
-      order: { fechaRegistro: 'DESC' }
-    });
+async actualizarPedidosPorRangoFechas(
+  idTrabajador: number,
+  updateDto: UpdatePedidoTrabajadorClienteDto,
+): Promise<{ actualizados: PedidoTrabajadorCliente[]; creados: PedidoTrabajadorCliente[] }> {
+  
+  // 1. Validar relación trabajador-cliente
+  const relacion = await this.trabajadorClienteRepository.findOne({
+    where: { idTrabajador },
+    order: { fechaRegistro: 'DESC' }
+  });
 
-    if (!relacion) {
-      throw new BadRequestException(`No se encontró cliente asociado al trabajador ${idTrabajador}`);
-    }
-
-    const idCliente = relacion.idCliente;
-    const fechaInicio = new Date(updateDto.FechaIngreso);
-    const fechaFin = new Date(updateDto.FechaSalida);
-
-    // 2. Calcular todas las fechas en el rango
-    const todasFechasEnRango: string[] = [];
-    const currentDate = new Date(fechaInicio);
-    
-    while (currentDate <= fechaFin) {
-      todasFechasEnRango.push(currentDate.toISOString().split('T')[0]);
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    // 3. Buscar pedidos existentes
-    const pedidosExistentes = await this.pedidoTrabajadorClienteRepository.find({
-      where: {
-        idTrabajador,
-        idCliente,
-        fechaPedido: In(todasFechasEnRango),
-      },
-    });
-
-    // 4. Separar fechas existentes y no existentes
-    const fechasExistentes = pedidosExistentes.map(p => p.fechaPedido);
-    const fechasNoExistentes = todasFechasEnRango.filter(
-      fecha => !fechasExistentes.includes(fecha)
-    );
-
-    // 5. Actualizar pedidos existentes
-    const pedidosActualizados = await Promise.all(
-      pedidosExistentes.map(async (pedido) => {
-        return this.aplicarActualizacionesAPedido(pedido, updateDto);
-      })
-    );
-
-    // 6. Crear nuevos pedidos para fechas faltantes
-    const nuevosPedidos = await Promise.all(
-      fechasNoExistentes.map(async (fecha) => {
-        const nuevoPedido = new PedidoTrabajadorCliente();
-        nuevoPedido.idTrabajador = idTrabajador;
-        nuevoPedido.idCliente = idCliente;
-        nuevoPedido.fechaPedido = fecha;
-        nuevoPedido.trabajadorCliente = { 
-          idTrabajador, 
-          idCliente 
-        } as TrabajadorCliente;
-        
-        // Valores por defecto
-        nuevoPedido.estadoPedido = 1;
-        nuevoPedido.indicadorEstado = 'A';
-        nuevoPedido.usuarioRegistro = 'usuario-actual';
-        
-        return this.aplicarActualizacionesAPedido(nuevoPedido, updateDto);
-      })
-    );
-
-    // 7. Guardar todos los cambios
-    const [savedActualizados, savedCreados] = await Promise.all([
-      this.pedidoTrabajadorClienteRepository.save(pedidosActualizados),
-      this.pedidoTrabajadorClienteRepository.save(nuevosPedidos),
-    ]);
-
-    return {
-      actualizados: savedActualizados,
-      creados: savedCreados,
-    };
+  if (!relacion) {
+    throw new BadRequestException(`No se encontró cliente asociado al trabajador ${idTrabajador}`);
   }
 
-  private async aplicarActualizacionesAPedido(
-    pedido: PedidoTrabajadorCliente,
-    updateDto: UpdatePedidoTrabajadorClienteDto,
-  ): Promise<PedidoTrabajadorCliente> {
-    // Actualizar productos
-    if (updateDto.IdProductoDesayuno !== undefined) {
-      pedido.productoDesayuno = updateDto.IdProductoDesayuno !== null 
-        ? await this.productoRepository.findOneBy({ idProducto: updateDto.IdProductoDesayuno })
-        : null;
-    }
-    
-    if (updateDto.IdProductoAlmuerzo !== undefined) {
-      pedido.productoAlmuerzo = updateDto.IdProductoAlmuerzo !== null
-        ? await this.productoRepository.findOneBy({ idProducto: updateDto.IdProductoAlmuerzo })
-        : null;
-    }
-    
-    if (updateDto.IdProductoCena !== undefined) {
-      pedido.productoCena = updateDto.IdProductoCena !== null
-        ? await this.productoRepository.findOneBy({ idProducto: updateDto.IdProductoCena })
-        : null;
-    }
+  const idCliente = relacion.idCliente;
+  const fechaInicio = new Date(updateDto.FechaIngreso);
+  const fechaFin = new Date(updateDto.FechaSalida);
 
-    // Actualizar lugares de entrega
-    if (updateDto.IdLugarEntregaDesayuno !== undefined) {
-      pedido.lugarEntregaDesayuno = updateDto.IdLugarEntregaDesayuno !== null
-        ? await this.lugarDestinoRepository.findOneBy({ idLugarDestino: updateDto.IdLugarEntregaDesayuno })
-        : null;
-    }
-    
-    if (updateDto.IdLugarEntregaAlmuerzo !== undefined) {
-      pedido.lugarEntregaAlmuerzo = updateDto.IdLugarEntregaAlmuerzo !== null
-        ? await this.lugarDestinoRepository.findOneBy({ idLugarDestino: updateDto.IdLugarEntregaAlmuerzo })
-        : null;
-    }
-    
-    if (updateDto.IdLugarEntregaCena !== undefined) {
-      pedido.lugarEntregaCena = updateDto.IdLugarEntregaCena !== null
-        ? await this.lugarDestinoRepository.findOneBy({ idLugarDestino: updateDto.IdLugarEntregaCena })
-        : null;
-    }
+  // 2. Generar todas las fechas del rango
+  const todasFechasEnRango: string[] = [];
+  const currentDate = new Date(fechaInicio);
 
-    // Actualizar metadatos
-    pedido.fechaModificacion = new Date().toISOString().split('T')[0];
-
-    return pedido;
+  while (currentDate <= fechaFin) {
+    todasFechasEnRango.push(currentDate.toISOString().split('T')[0]);
+    currentDate.setDate(currentDate.getDate() + 1);
   }
+
+  // 3. Buscar pedidos activos existentes (excluye anulados)
+  const pedidosExistentes = await this.pedidoTrabajadorClienteRepository.find({
+    where: {
+      idTrabajador,
+      idCliente,
+      fechaPedido: In(todasFechasEnRango),
+      estadoPedido: 1, // Solo pedidos activos
+    },
+  });
+
+  const fechasExistentes = pedidosExistentes.map(p => p.fechaPedido);
+  const fechasNoExistentes = todasFechasEnRango.filter(f => !fechasExistentes.includes(f));
+
+  // 4. Actualizar pedidos existentes
+  const pedidosActualizados = await Promise.all(
+    pedidosExistentes.map(p => this.aplicarActualizacionesAPedido(p, updateDto))
+  );
+
+  // 5. Crear nuevos pedidos para fechas faltantes
+  const nuevosPedidos = await Promise.all(
+    fechasNoExistentes.map(async (fecha) => {
+      const nuevoPedido = new PedidoTrabajadorCliente();
+      nuevoPedido.idTrabajador = idTrabajador;
+      nuevoPedido.idCliente = idCliente;
+      nuevoPedido.fechaPedido = fecha;
+      nuevoPedido.trabajadorCliente = { idTrabajador, idCliente } as TrabajadorCliente;
+      nuevoPedido.estadoPedido = 1;
+      nuevoPedido.indicadorEstado = 'A';
+      nuevoPedido.usuarioRegistro = 'usuario-actual';
+
+      return this.aplicarActualizacionesAPedido(nuevoPedido, updateDto);
+    })
+  );
+
+  // 6. Guardar cambios
+  const [savedActualizados, savedCreados] = await Promise.all([
+    this.pedidoTrabajadorClienteRepository.save(pedidosActualizados),
+    this.pedidoTrabajadorClienteRepository.save(nuevosPedidos),
+  ]);
+
+  return {
+    actualizados: savedActualizados,
+    creados: savedCreados,
+  };
+}
+
+private async aplicarActualizacionesAPedido(
+  pedido: PedidoTrabajadorCliente,
+  updateDto: UpdatePedidoTrabajadorClienteDto,
+): Promise<PedidoTrabajadorCliente> {
+
+  // Producto desayuno
+  if (updateDto.IdProductoDesayuno !== undefined) {
+    if (updateDto.IdProductoDesayuno === null) {
+      pedido.productoDesayuno = null;
+    } else {
+      const producto = await this.productoRepository.findOneBy({ idProducto: updateDto.IdProductoDesayuno });
+      if (!producto) throw new BadRequestException(`Producto desayuno con ID ${updateDto.IdProductoDesayuno} no existe`);
+      pedido.productoDesayuno = producto;
+    }
+  } else {
+    pedido.productoDesayuno = null; // Si no viene, se elimina (estilo PUT)
+  }
+
+  // Producto almuerzo
+  if (updateDto.IdProductoAlmuerzo !== undefined) {
+    if (updateDto.IdProductoAlmuerzo === null) {
+      pedido.productoAlmuerzo = null;
+    } else {
+      const producto = await this.productoRepository.findOneBy({ idProducto: updateDto.IdProductoAlmuerzo });
+      if (!producto) throw new BadRequestException(`Producto almuerzo con ID ${updateDto.IdProductoAlmuerzo} no existe`);
+      pedido.productoAlmuerzo = producto;
+    }
+  } else {
+    pedido.productoAlmuerzo = null;
+  }
+
+  // Producto cena
+  if (updateDto.IdProductoCena !== undefined) {
+    if (updateDto.IdProductoCena === null) {
+      pedido.productoCena = null;
+    } else {
+      const producto = await this.productoRepository.findOneBy({ idProducto: updateDto.IdProductoCena });
+      if (!producto) throw new BadRequestException(`Producto cena con ID ${updateDto.IdProductoCena} no existe`);
+      pedido.productoCena = producto;
+    }
+  } else {
+    pedido.productoCena = null;
+  }
+
+  // Lugar entrega desayuno
+  if (updateDto.IdLugarEntregaDesayuno !== undefined) {
+    if (updateDto.IdLugarEntregaDesayuno === null) {
+      pedido.lugarEntregaDesayuno = null;
+    } else {
+      const lugar = await this.lugarDestinoRepository.findOneBy({ idLugarDestino: updateDto.IdLugarEntregaDesayuno });
+      if (!lugar) throw new BadRequestException(`Lugar entrega desayuno con ID ${updateDto.IdLugarEntregaDesayuno} no existe`);
+      pedido.lugarEntregaDesayuno = lugar;
+    }
+  } else {
+    pedido.lugarEntregaDesayuno = null;
+  }
+
+  // Lugar entrega almuerzo
+  if (updateDto.IdLugarEntregaAlmuerzo !== undefined) {
+    if (updateDto.IdLugarEntregaAlmuerzo === null) {
+      pedido.lugarEntregaAlmuerzo = null;
+    } else {
+      const lugar = await this.lugarDestinoRepository.findOneBy({ idLugarDestino: updateDto.IdLugarEntregaAlmuerzo });
+      if (!lugar) throw new BadRequestException(`Lugar entrega almuerzo con ID ${updateDto.IdLugarEntregaAlmuerzo} no existe`);
+      pedido.lugarEntregaAlmuerzo = lugar;
+    }
+  } else {
+    pedido.lugarEntregaAlmuerzo = null;
+  }
+
+  // Lugar entrega cena
+  if (updateDto.IdLugarEntregaCena !== undefined) {
+    if (updateDto.IdLugarEntregaCena === null) {
+      pedido.lugarEntregaCena = null;
+    } else {
+      const lugar = await this.lugarDestinoRepository.findOneBy({ idLugarDestino: updateDto.IdLugarEntregaCena });
+      if (!lugar) throw new BadRequestException(`Lugar entrega cena con ID ${updateDto.IdLugarEntregaCena} no existe`);
+      pedido.lugarEntregaCena = lugar;
+    }
+  } else {
+    pedido.lugarEntregaCena = null;
+  }
+
+  // Metadatos
+  pedido.fechaModificacion = new Date().toISOString().split('T')[0];
+
+  return pedido;
+}
+
 
 
 
